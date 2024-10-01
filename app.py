@@ -3,7 +3,17 @@ import pandas as pd
 import os
 from werkzeug.utils import secure_filename
 import csv
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import json
+import tempfile
+import traceback
+import time
 import chardet
 from flask import jsonify
 
@@ -69,6 +79,58 @@ def analyze_comments(comments):
 
     return positive_comments, purchase_interest
 
+def scrape_tiktok_comments(url):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+    
+    with webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options) as driver:
+        try:
+            print(f"Navigating to URL: {url}")
+            driver.get(url)
+            
+            print("Waiting for page to load...")
+            time.sleep(5)  # Add a 5-second delay
+            
+            print("Waiting for comment container to load...")
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.XPATH, '//div[contains(@class, "DivCommentListContainer")]'))
+            )
+            print("Comment container loaded.")
+            
+            print("Loading scraper script...")
+            with open('tiktok_scraper.js', 'r') as file:
+                js_code = file.read()
+            
+            print("Executing scraper script...")
+            driver.execute_script(js_code)
+            
+            print("Waiting for scraping to complete...")
+            WebDriverWait(driver, 300).until(lambda d: d.execute_script("return window.scrapedData !== undefined"))
+            
+            print("Retrieving scraped data...")
+            result = driver.execute_script("return window.scrapedData;")
+            
+            if not result:
+                raise ValueError("No data returned from the JavaScript execution")
+            
+            data = json.loads(result)
+            csv_content = data.get('csv')
+            if not csv_content:
+                raise ValueError("CSV content is None or empty")
+            
+            print("Scraping completed successfully.")
+            return csv_content
+        except Exception as e:
+            print(f"Error during scraping: {str(e)}")
+            print(f"Current URL: {driver.current_url}")
+            print(f"Page source: {driver.page_source[:1000]}...")  # Print first 1000 characters of page source
+            traceback.print_exc()
+            return None
+        
 
 @app.route('/')
 def index():
@@ -104,6 +166,44 @@ def upload_file():
     else:
         return jsonify({'error': 'Invalid file type'}), 400
 
+@app.route('/scrape', methods=['POST'])
+def scrape_url():
+    url = request.json.get('url')
+    if not url:
+        return jsonify({'error': 'No URL provided'}), 400
+
+    try:
+        csv_content = scrape_tiktok_comments(url)
+        if csv_content is None:
+            return jsonify({'error': 'Failed to scrape TikTok URL'}), 500
+
+        # Save CSV content to a temporary file
+        with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False, suffix='.csv') as temp_file:
+            temp_file.write(csv_content)
+            temp_file_path = temp_file.name
+
+        # Process CSV file
+        post_metadata, comments = process_csv(temp_file_path)
+
+        # Clean up
+        os.remove(temp_file_path)
+
+        # Analyze comments
+        positive_comments, purchase_interest = analyze_comments(comments)
+
+        # Store results in session
+        session['results'] = {
+            'positive_comments': positive_comments,
+            'purchase_interest': purchase_interest,
+            'positive_count': len(positive_comments),
+            'purchase_count': len(purchase_interest),
+            'post_metadata': post_metadata
+        }
+
+        return jsonify({'redirect': url_for('results')})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/results')
 def results():
