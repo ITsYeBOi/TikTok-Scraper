@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Analysis Results</h1>
+        <div class="chart-container">
+            <canvas id="commentChart" 
+                    data-positive-count="{{ positive_count }}"
+                    data-purchase-count="{{ purchase_count }}"></canvas>
+        </div>
+
+        <h2>Post Metadata</h2>
+        <div class="metadata-container">
+            {% for key, value in post_metadata.items() %}
+            <p><strong>{{ key }}:</strong> {{ value }}</p>
+            {% endfor %}
+        </div>
+
+        <h2>Positive Comments</h2>
+        <div class="table-container">
+            {% if positive_comments %}
+            <table>
+                <thead>
+                    <tr>
+                        {% for key in positive_comments[0].keys() %}
+                        <th>{{ key }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in positive_comments %}
+                    <tr>
+                        {% for value in comment.values() %}
+                        <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No positive comments found.</p>
+            {% endif %}
+        </div>
+
+        <h2>Comments Indicating Purchase Interest</h2>
+        <div class="table-container">
+            {% if purchase_interest %}
+            <table>
+                <thead>
+                    <tr>
+                        {% for key in purchase_interest[0].keys() %}
+                        <th>{{ key }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in purchase_interest %}
+                    <tr>
+                        {% for value in comment.values() %}
+                        <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No comments indicating purchase interest found.</p>
+            {% endif %}
+        </div>
+
+        <a href="/" class="button">Go Back</a>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var ctx = document.getElementById('commentChart').getContext('2d');
+            var chartElement = document.getElementById('commentChart');
+            var positiveCount = parseInt(chartElement.dataset.positiveCount);
+            var purchaseCount = parseInt(chartElement.dataset.purchaseCount);
+
+            var chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Positive Comments', 'Purchase Interest'],
+                    datasets: [{
+                        label: 'Number of Comments',
+                        data: [positiveCount, purchaseCount],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(153, 102, 255, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
