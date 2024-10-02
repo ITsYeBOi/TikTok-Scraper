@@ -81,7 +81,7 @@ function csvFromComment(comment) {
          + quoteString(commentText) + ',' + timeCommentedAgo + ',' + commentLikesCount + ',' + quoteString(pic);
 }
 
-// Scraping function
+// Updated scraping function to only scrape first-level comments
 async function scrapeComments() {
     // Loading 1st level comments
     var loadingCommentsBuffer = 30;
@@ -107,27 +107,8 @@ async function scrapeComments() {
     }
     console.log('Opened all 1st level comments');
 
-    // Loading 2nd level comments
-    loadingCommentsBuffer = 5;
-    while (loadingCommentsBuffer > 0) {
-        readMoreDivs = getElementsByXPath(viewMoreDivXPath);
-        for (var i = 0; i < readMoreDivs.length; i++) {
-            readMoreDivs[i].click();
-        }
-
-        await new Promise(r => setTimeout(r, 500));
-        if (readMoreDivs.length === 0) {
-            loadingCommentsBuffer--;
-        } else {
-            loadingCommentsBuffer = 5;
-        }
-        console.log('Buffer ' + loadingCommentsBuffer);
-    }
-    console.log('Opened all 2nd level comments');
-
-    // Reading all comments, extracting and converting the data to csv
+    // Reading all first-level comments, extracting and converting the data to csv
     var comments = getAllComments();
-    var level2CommentsLength = getElementsByXPath(level2CommentsXPath).length;
     var publisherProfileUrl = getElementsByXPath(publisherProfileUrlXPath)[0].outerText;
     var nicknameAndTimePublishedAgo = getElementsByXPath(nicknameAndTimePublishedAgoXPath)[0].outerText.replaceAll('\n', ' ').split(' · ');
 
@@ -137,7 +118,6 @@ async function scrapeComments() {
     var totalComments = likesCommentsShares[1].outerText;
 
     var shares = likesCommentsShares[2] ? likesCommentsShares[2].outerText : "N/A";
-    var commentNumberDifference = Math.abs(parseInt(totalComments) - (comments.length));
 
     var csv = 'Now,' + Date() + '\n';
     csv += 'Post URL,' + url + '\n';
@@ -148,51 +128,26 @@ async function scrapeComments() {
     csv += 'Post Likes,' + likes + '\n';
     csv += 'Post Shares,' + shares + '\n';
     csv += 'Description,' + quoteString(getElementsByXPath(descriptionXPath)[0].outerText) + '\n';
-    csv += 'Number of 1st level comments,' + (comments.length - level2CommentsLength) + '\n';
-    csv += 'Number of 2nd level comments,' + level2CommentsLength + '\n';
-    csv += '"Total Comments (actual, in this list, rendered in the comment section; needs all comments to be loaded!)",' + (comments.length) + '\n';
-    csv += "Total Comments (which TikTok tells you; it's too high most of the time when dealing with many comments OR way too low because TikTok limits the number of comments to prevent scraping)," + totalComments + '\n';
-    csv += "Difference," + commentNumberDifference + '\n';
-    csv += 'Comment Number (ID),Nickname,User @,User URL,Comment Text,Time,Likes,Profile Picture URL,Is 2nd Level Comment,User Replied To,Number of Replies\n';
+    csv += 'Number of 1st level comments,' + comments.length + '\n';
+    csv += "Total Comments (which TikTok tells you)," + totalComments + '\n';
+    csv += 'Comment Number (ID),Nickname,User @,User URL,Comment Text,Time,Likes,Profile Picture URL\n';
 
     var count = 1;
-    var totalReplies = 0;
-    var repliesSeen = 1;
     for (var i = 0; i < comments.length; i++) {
-        csv += count + ',' + csvFromComment(comments[i]) + ',';
-        if (i > 0 && isReply(comments[i])) {
-            csv += "Yes," + quoteString(getNickname(comments[i - repliesSeen])) + ',0';
-            repliesSeen += 1;
-        }
-        else {
-            csv += 'No,---,';
-            totalReplies = 0;
-            repliesSeen = 1;
-            for (var j = 1; j < comments.length - i; j++) {
-                if (!isReply(comments[i + j])) {
-                    break;
-                }
-                totalReplies += 1;
-            }
-            csv += totalReplies;
-        }
-        csv += '\n';
+        csv += count + ',' + csvFromComment(comments[i]) + '\n';
         count++;
     }
 
-    const parsedComments = csv.split('\n').slice(14).map(line => {
-        const [id, nickname, user, userUrl, commentText, time, likes, profilePicUrl, isSecondLevel, userRepliedTo, numReplies] = line.split(',');
+    const parsedComments = csv.split('\n').slice(11).map(line => {
+        const [id, nickname, user, userUrl, commentText, time, likes, profilePicUrl] = line.split(',');
         return {
             Nickname: nickname,
             "User @": user,
             "User URL": userUrl,
-            "Comment_Text": commentText,  // Make sure this matches
+            "Comment_Text": commentText,
             Time: time,
             Likes: likes,
-            "Profile Picture URL": profilePicUrl,
-            "Is 2nd Level Comment": isSecondLevel,
-            "User Replied To": userRepliedTo,
-            "Number of Replies": numReplies
+            "Profile Picture URL": profilePicUrl
         };
     });
 
