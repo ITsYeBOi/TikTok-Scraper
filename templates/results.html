@@ -1,11 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- ... (head content remains the same) ... -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Comment Analysis Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #00f2ea;
+            --secondary-color: #ff0050;
+            --background-color: #f0f2f5;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1, h2 {
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+        
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .metadata-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .metadata-container p {
+            margin: 10px 0;
+        }
+        
+        .table-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f8f8;
+        }
+        
+        .button {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .button:hover {
+            background-color: #d10043;
+        }
+
+        .comment-number {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Analysis Results</h1>
+        <h1>TikTok Comment Analysis Results</h1>
+        
         <div class="chart-container">
             <canvas id="commentChart" 
                     data-positive-count="{{ positive_count }}"
@@ -25,17 +126,23 @@
             <table>
                 <thead>
                     <tr>
-                        {% for key in positive_comments[0].keys() %}
-                        <th>{{ key }}</th>
-                        {% endfor %}
+                        <th>#</th>
+                        <th>Nickname</th>
+                        <th>User @</th>
+                        <th>Comment</th>
+                        <th>Time</th>
+                        <th>Likes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for comment in positive_comments %}
                     <tr>
-                        {% for value in comment.values() %}
-                        <td>{{ value }}</td>
-                        {% endfor %}
+                        <td class="comment-number">{{ loop.index }}</td>
+                        <td>{{ comment['Nickname'] }}</td>
+                        <td>{{ comment['User @'] }}</td>
+                        <td>{{ comment['Comment_Text'] }}</td>
+                        <td>{{ comment['Time'] }}</td>
+                        <td>{{ comment['Likes'] }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -51,23 +158,61 @@
             <table>
                 <thead>
                     <tr>
-                        {% for key in purchase_interest[0].keys() %}
-                        <th>{{ key }}</th>
-                        {% endfor %}
+                        <th>#</th>
+                        <th>Nickname</th>
+                        <th>User @</th>
+                        <th>Comment</th>
+                        <th>Time</th>
+                        <th>Likes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for comment in purchase_interest %}
                     <tr>
-                        {% for value in comment.values() %}
-                        <td>{{ value }}</td>
-                        {% endfor %}
+                        <td class="comment-number">{{ loop.index }}</td>
+                        <td>{{ comment['Nickname'] }}</td>
+                        <td>{{ comment['User @'] }}</td>
+                        <td>{{ comment['Comment_Text'] }}</td>
+                        <td>{{ comment['Time'] }}</td>
+                        <td>{{ comment['Likes'] }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             {% else %}
             <p>No comments indicating purchase interest found.</p>
+            {% endif %}
+        </div>
+
+        <h2>All Comments</h2>
+        <div class="table-container">
+            {% if all_comments %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nickname</th>
+                        <th>User @</th>
+                        <th>Comment</th>
+                        <th>Time</th>
+                        <th>Likes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in all_comments %}
+                    <tr>
+                        <td class="comment-number">{{ loop.index }}</td>
+                        <td>{{ comment['Nickname'] }}</td>
+                        <td>{{ comment['User @'] }}</td>
+                        <td>{{ comment['Comment_Text'] }}</td>
+                        <td>{{ comment['Time'] }}</td>
+                        <td>{{ comment['Likes'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No comments found.</p>
             {% endif %}
         </div>
 
@@ -88,20 +233,30 @@
                         label: 'Number of Comments',
                         data: [positiveCount, purchaseCount],
                         backgroundColor: [
-                            'rgba(75, 192, 192, 0.6)',
-                            'rgba(153, 102, 255, 0.6)'
+                            'rgba(0, 242, 234, 0.6)',
+                            'rgba(255, 0, 80, 0.6)'
                         ],
                         borderColor: [
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)'
+                            'rgba(0, 242, 234, 1)',
+                            'rgba(255, 0, 80, 1)'
                         ],
                         borderWidth: 1
                     }]
                 },
                 options: {
+                    responsive: true,
                     scales: {
                         y: {
                             beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Comment Analysis'
                         }
                     }
                 }
