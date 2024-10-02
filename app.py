@@ -47,18 +47,13 @@ def analyze_comments(comments):
         summary = {
             "Nickname": row.get('Nickname', ''),
             "User @": row.get('User @', ''),
-            "User URL": row.get('User URL', ''),
-            "Comment_Text": row.get('Comment_Text', ''),  # Changed from 'Comment Text' to 'Comment_Text'
+            "Comment_Text": row.get('Comment_Text', ''),
             "Time": row.get('Time', ''),
-            "Likes": row.get('Likes', ''),
-            "Profile Picture URL": row.get('Profile Picture URL', ''),
-            "Is 2nd Level Comment": row.get('Is 2nd Level Comment', ''),
-            "User Replied To": row.get('User Replied To', ''),
-            "Number of Replies": row.get('Number of Replies', ''),
+            "Likes": row.get('Likes', '')
         }
 
-        if pd.notna(row.get('Comment_Text')):  # Changed from 'Comment Text' to 'Comment_Text'
-            comment_text = str(row.get('Comment_Text', '')).lower()  # Changed from 'Comment Text' to 'Comment_Text'
+        if pd.notna(row.get('Comment_Text')):
+            comment_text = str(row.get('Comment_Text', '')).lower()
             if any(keyword in comment_text for keyword in ["love", "great", "cool", "nice", "reward", "interested", "store"]):
                 positive_comments.append(summary)
 
