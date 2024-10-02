@@ -1,23 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, jsonify, session
+from flask_cors import CORS
 import pandas as pd
 import os
 from werkzeug.utils import secure_filename
 import csv
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-import json
-import tempfile
-import traceback
-import time
 import chardet
-from flask import jsonify
+from flask import redirect, url_for
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = 'your_secret_key'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'csv'}
@@ -36,16 +27,13 @@ def process_csv(csv_file):
         csv_reader = csv.reader(file)
         rows = list(csv_reader)
 
-    # Find the index where the comment data starts
     comment_start_index = next((i for i, row in enumerate(rows) if row and row[0] == 'Comment Number (ID)'), None)
 
     if comment_start_index is None:
         raise ValueError("CSV format is incorrect. Unable to find comment data.")
 
-    # Extract metadata
     metadata = {row[0]: row[1] for row in rows[:comment_start_index] if len(row) >= 2}
 
-    # Extract comments
     comment_headers = rows[comment_start_index]
     comments = pd.DataFrame(rows[comment_start_index+1:], columns=comment_headers)
 
@@ -57,20 +45,20 @@ def analyze_comments(comments):
 
     for _, row in comments.iterrows():
         summary = {
-            "Nickname": row['Nickname'],
-            "User @": row['User @'],
-            "User URL": row['User URL'],
-            "Comment_Text": row['Comment Text'],
-            "Time": row['Time'],
-            "Likes": row['Likes'],
-            "Profile Picture URL": row['Profile Picture URL'],
-            "Is 2nd Level Comment": row['Is 2nd Level Comment'],
-            "User Replied To": row['User Replied To'],
-            "Number of Replies": row['Number of Replies'],
+            "Nickname": row.get('Nickname', ''),
+            "User @": row.get('User @', ''),
+            "User URL": row.get('User URL', ''),
+            "Comment_Text": row.get('Comment_Text', ''),  # Changed from 'Comment Text' to 'Comment_Text'
+            "Time": row.get('Time', ''),
+            "Likes": row.get('Likes', ''),
+            "Profile Picture URL": row.get('Profile Picture URL', ''),
+            "Is 2nd Level Comment": row.get('Is 2nd Level Comment', ''),
+            "User Replied To": row.get('User Replied To', ''),
+            "Number of Replies": row.get('Number of Replies', ''),
         }
 
-        if pd.notna(row['Comment Text']):
-            comment_text = str(row['Comment Text']).lower()
+        if pd.notna(row.get('Comment_Text')):  # Changed from 'Comment Text' to 'Comment_Text'
+            comment_text = str(row.get('Comment_Text', '')).lower()  # Changed from 'Comment Text' to 'Comment_Text'
             if any(keyword in comment_text for keyword in ["love", "great", "cool", "nice", "reward", "interested", "store"]):
                 positive_comments.append(summary)
 
@@ -78,59 +66,6 @@ def analyze_comments(comments):
                 purchase_interest.append(summary)
 
     return positive_comments, purchase_interest
-
-def scrape_tiktok_comments(url):
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-    
-    with webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options) as driver:
-        try:
-            print(f"Navigating to URL: {url}")
-            driver.get(url)
-            
-            print("Waiting for page to load...")
-            time.sleep(5)  # Add a 5-second delay
-            
-            print("Waiting for comment container to load...")
-            WebDriverWait(driver, 30).until(
-                EC.presence_of_element_located((By.XPATH, '//div[contains(@class, "DivCommentListContainer")]'))
-            )
-            print("Comment container loaded.")
-            
-            print("Loading scraper script...")
-            with open('tiktok_scraper.js', 'r') as file:
-                js_code = file.read()
-            
-            print("Executing scraper script...")
-            driver.execute_script(js_code)
-            
-            print("Waiting for scraping to complete...")
-            WebDriverWait(driver, 300).until(lambda d: d.execute_script("return window.scrapedData !== undefined"))
-            
-            print("Retrieving scraped data...")
-            result = driver.execute_script("return window.scrapedData;")
-            
-            if not result:
-                raise ValueError("No data returned from the JavaScript execution")
-            
-            data = json.loads(result)
-            csv_content = data.get('csv')
-            if not csv_content:
-                raise ValueError("CSV content is None or empty")
-            
-            print("Scraping completed successfully.")
-            return csv_content
-        except Exception as e:
-            print(f"Error during scraping: {str(e)}")
-            print(f"Current URL: {driver.current_url}")
-            print(f"Page source: {driver.page_source[:1000]}...")  # Print first 1000 characters of page source
-            traceback.print_exc()
-            return None
-        
 
 @app.route('/')
 def index():
@@ -166,44 +101,33 @@ def upload_file():
     else:
         return jsonify({'error': 'Invalid file type'}), 400
 
-@app.route('/scrape', methods=['POST'])
-def scrape_url():
-    url = request.json.get('url')
-    if not url:
-        return jsonify({'error': 'No URL provided'}), 400
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    data = request.json
+    comments_data = data['comments']
+    metadata = data['metadata']
+    comments = pd.DataFrame(comments_data)
+    
+    positive_comments, purchase_interest = analyze_comments(comments)
+    
+    session['results'] = {
+        'positive_comments': positive_comments,
+        'purchase_interest': purchase_interest,
+        'positive_count': len(positive_comments),
+        'purchase_count': len(purchase_interest),
+        'post_metadata': metadata
+    }
+    
+    return jsonify({'status': 'success'})
 
-    try:
-        csv_content = scrape_tiktok_comments(url)
-        if csv_content is None:
-            return jsonify({'error': 'Failed to scrape TikTok URL'}), 500
-
-        # Save CSV content to a temporary file
-        with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8', delete=False, suffix='.csv') as temp_file:
-            temp_file.write(csv_content)
-            temp_file_path = temp_file.name
-
-        # Process CSV file
-        post_metadata, comments = process_csv(temp_file_path)
-
-        # Clean up
-        os.remove(temp_file_path)
-
-        # Analyze comments
-        positive_comments, purchase_interest = analyze_comments(comments)
-
-        # Store results in session
-        session['results'] = {
-            'positive_comments': positive_comments,
-            'purchase_interest': purchase_interest,
-            'positive_count': len(positive_comments),
-            'purchase_count': len(purchase_interest),
-            'post_metadata': post_metadata
-        }
-
-        return jsonify({'redirect': url_for('results')})
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+# Add a new route to handle CORS preflight requests
+@app.route('/analyze', methods=['OPTIONS'])
+def handle_options_request():
+    response = app.make_default_options_response()
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'POST'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
 
 @app.route('/results')
 def results():
@@ -217,5 +141,6 @@ def results():
                            positive_count=results.get('positive_count', 0),
                            purchase_count=results.get('purchase_count', 0),
                            post_metadata=results.get('post_metadata', {}))
+
 if __name__ == '__main__':
     app.run(debug=True)
