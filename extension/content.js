@@ -85,39 +85,25 @@ function csvFromComment(comment) {
 async function scrapeComments() {
     // Loading 1st level comments
     var loadingCommentsBuffer = 30;
-    var numOfCommentsBeforeScroll = getAllComments().length;
-    var noChangeCount = 0;
-    const MAX_COMMENTS = 1000; // Set a maximum number of comments to scrape
-    const MAX_NO_CHANGE = 10; // Maximum number of times we allow no change before stopping
-
-    while (loadingCommentsBuffer > 0 && numOfCommentsBeforeScroll < MAX_COMMENTS) {
+    var numOfcommentsBeforeScroll = getAllComments().length;
+    while (loadingCommentsBuffer > 0) {
         allComments = getAllComments();
         lastComment = allComments[allComments.length - 1];
         lastComment.scrollIntoView(false);
 
-        await new Promise(r => setTimeout(r, 1000)); // Increase wait time
+        numOfcommentsAftScroll = getAllComments().length;
 
-        numOfCommentsAfterScroll = getAllComments().length;
-
-        if (numOfCommentsAfterScroll !== numOfCommentsBeforeScroll) {
+        if (numOfcommentsAftScroll !== numOfcommentsBeforeScroll) {
             loadingCommentsBuffer = 15;
-            noChangeCount = 0;
         } else {
             commentsDiv = getElementsByXPath(commentsDivXPath)[0];
             commentsDiv.scrollIntoView(false);
             loadingCommentsBuffer--;
-            noChangeCount++;
         }
+        numOfcommentsBeforeScroll = numOfcommentsAftScroll;
+        console.log('Loading 1st level comment number ' + numOfcommentsAftScroll);
 
-        if (noChangeCount >= MAX_NO_CHANGE) {
-            console.log('No new comments loaded after multiple attempts. Stopping comment loading.');
-            break;
-        }
-
-        numOfCommentsBeforeScroll = numOfCommentsAfterScroll;
-        console.log('Loading 1st level comment number ' + numOfCommentsAfterScroll);
-
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 300));
     }
     console.log('Opened all 1st level comments');
 
@@ -127,10 +113,9 @@ async function scrapeComments() {
         readMoreDivs = getElementsByXPath(viewMoreDivXPath);
         for (var i = 0; i < readMoreDivs.length; i++) {
             readMoreDivs[i].click();
-            await new Promise(r => setTimeout(r, 500)); // Add delay after each click
         }
 
-        await new Promise(r => setTimeout(r, 1000)); // Increase wait time
+        await new Promise(r => setTimeout(r, 500));
         if (readMoreDivs.length === 0) {
             loadingCommentsBuffer--;
         } else {
