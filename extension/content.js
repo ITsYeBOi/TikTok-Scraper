@@ -1,13 +1,66 @@
 // Inject the button into the TikTok page
 const scrapeAndAnalyzeButton = document.createElement('button');
 scrapeAndAnalyzeButton.innerText = "Scrape and Analyze Comments";
+
+// Button styling
 scrapeAndAnalyzeButton.style.position = 'fixed';
-scrapeAndAnalyzeButton.style.top = '10px';
-scrapeAndAnalyzeButton.style.right = '10px';
+scrapeAndAnalyzeButton.style.top = '20px';
+scrapeAndAnalyzeButton.style.right = '20px';
 scrapeAndAnalyzeButton.style.zIndex = '9999';
-scrapeAndAnalyzeButton.style.padding = '10px';
+scrapeAndAnalyzeButton.style.padding = '12px 20px';
 scrapeAndAnalyzeButton.style.backgroundColor = '#4CAF50';
 scrapeAndAnalyzeButton.style.color = '#FFF';
+scrapeAndAnalyzeButton.style.border = 'none';
+scrapeAndAnalyzeButton.style.borderRadius = '8px';
+scrapeAndAnalyzeButton.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+scrapeAndAnalyzeButton.style.fontSize = '16px';
+scrapeAndAnalyzeButton.style.cursor = 'pointer';
+scrapeAndAnalyzeButton.style.transition = 'all 0.3s ease';
+
+// Hover effect (only when not in progress)
+scrapeAndAnalyzeButton.addEventListener('mouseenter', function() {
+  if (!scrapeAndAnalyzeButton.disabled) {
+    scrapeAndAnalyzeButton.style.backgroundColor = '#45a049';
+    scrapeAndAnalyzeButton.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15)';
+  }
+});
+
+scrapeAndAnalyzeButton.addEventListener('mouseleave', function() {
+  if (!scrapeAndAnalyzeButton.disabled) {
+    scrapeAndAnalyzeButton.style.backgroundColor = '#4CAF50';
+    scrapeAndAnalyzeButton.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+  }
+});
+
+// Simulate the scraping process
+function scrapeComments() {
+  return new Promise((resolve) => {
+    // Simulate a delay for scraping process (e.g., 3 seconds)
+    setTimeout(() => {
+      resolve();
+    }, 3000);
+  });
+}
+
+// Button click handler
+scrapeAndAnalyzeButton.addEventListener('click', async function() {
+  // Change button to "Scraping in Progress"
+  scrapeAndAnalyzeButton.innerText = "Scraping in Progress...";
+  scrapeAndAnalyzeButton.style.backgroundColor = '#f0ad4e';
+  scrapeAndAnalyzeButton.style.boxShadow = 'inset 0 4px 6px rgba(0, 0, 0, 0.1)';
+  scrapeAndAnalyzeButton.disabled = true;  // Disable the button during the process
+  
+  // Start scraping
+  await scrapeComments();
+  
+  // Once done, revert button to its original state
+  scrapeAndAnalyzeButton.innerText = "Scrape and Analyze Comments";
+  scrapeAndAnalyzeButton.style.backgroundColor = '#4CAF50';
+  scrapeAndAnalyzeButton.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+  scrapeAndAnalyzeButton.disabled = false;
+});
+
+// Add the button to the page
 document.body.appendChild(scrapeAndAnalyzeButton);
 
 // XPath definitions and utility functions
