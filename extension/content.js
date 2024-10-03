@@ -175,9 +175,6 @@ scrapeAndAnalyzeButton.addEventListener('click', async function () {
         comments: scrapedData.comments,
         metadata: scrapedData.metadata
     });
-    
-    // Add the redirection to the results page here.
-    window.location.href = 'http://localhost:5000/results'; 
 });
 
 // Listen for messages from the popup
