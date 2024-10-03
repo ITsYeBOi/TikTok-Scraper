@@ -13,6 +13,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(response => response.json())
       .then(data => {
           if (data.status === 'success') {
+              // Open a new tab with the results page
               chrome.tabs.create({ url: 'http://localhost:5000/results' });
           } else {
               console.error('Analysis failed:', data.error);
