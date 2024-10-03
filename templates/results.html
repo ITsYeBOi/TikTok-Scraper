@@ -12,6 +12,9 @@
             --background-color: #f0f2f5;
             --text-color: #333;
             --border-color: #e0e0e0;
+            --positive-color: #4caf50;
+            --neutral-color: #ffa726;
+            --negative-color: #f44336;
         }
         
         body {
@@ -101,6 +104,18 @@
             font-weight: bold;
             color: var(--secondary-color);
         }
+
+        .sentiment-positive {
+            color: var(--positive-color);
+        }
+
+        .sentiment-neutral {
+            color: var(--neutral-color);
+        }
+
+        .sentiment-negative {
+            color: var(--negative-color);
+        }
     </style>
 </head>
 <body>
@@ -110,7 +125,8 @@
         <div class="chart-container">
             <canvas id="commentChart" 
                     data-positive-count="{{ positive_count }}"
-                    data-purchase-count="{{ purchase_count }}"></canvas>
+                    data-neutral-count="{{ neutral_count }}"
+                    data-negative-count="{{ negative_count }}"></canvas>
         </div>
 
         <h2>Post Metadata</h2>
@@ -140,7 +156,7 @@
                         <td class="comment-number">{{ loop.index }}</td>
                         <td>{{ comment['Nickname'] }}</td>
                         <td>{{ comment['User @'] }}</td>
-                        <td>{{ comment['Comment_Text'] }}</td>
+                        <td class="sentiment-positive">{{ comment['Comment_Text'] }}</td>
                         <td>{{ comment['Time'] }}</td>
                         <td>{{ comment['Likes'] }}</td>
                     </tr>
@@ -152,9 +168,9 @@
             {% endif %}
         </div>
 
-        <h2>Comments Indicating Purchase Interest</h2>
+        <h2>Neutral Comments</h2>
         <div class="table-container">
-            {% if purchase_interest %}
+            {% if neutral_comments %}
             <table>
                 <thead>
                     <tr>
@@ -167,12 +183,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for comment in purchase_interest %}
+                    {% for comment in neutral_comments %}
                     <tr>
                         <td class="comment-number">{{ loop.index }}</td>
                         <td>{{ comment['Nickname'] }}</td>
                         <td>{{ comment['User @'] }}</td>
-                        <td>{{ comment['Comment_Text'] }}</td>
+                        <td class="sentiment-neutral">{{ comment['Comment_Text'] }}</td>
                         <td>{{ comment['Time'] }}</td>
                         <td>{{ comment['Likes'] }}</td>
                     </tr>
@@ -180,7 +196,39 @@
                 </tbody>
             </table>
             {% else %}
-            <p>No comments indicating purchase interest found.</p>
+            <p>No neutral comments found.</p>
+            {% endif %}
+        </div>
+
+        <h2>Negative Comments</h2>
+        <div class="table-container">
+            {% if negative_comments %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nickname</th>
+                        <th>User @</th>
+                        <th>Comment</th>
+                        <th>Time</th>
+                        <th>Likes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in negative_comments %}
+                    <tr>
+                        <td class="comment-number">{{ loop.index }}</td>
+                        <td>{{ comment['Nickname'] }}</td>
+                        <td>{{ comment['User @'] }}</td>
+                        <td class="sentiment-negative">{{ comment['Comment_Text'] }}</td>
+                        <td>{{ comment['Time'] }}</td>
+                        <td>{{ comment['Likes'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No negative comments found.</p>
             {% endif %}
         </div>
 
@@ -196,6 +244,7 @@
                         <th>Comment</th>
                         <th>Time</th>
                         <th>Likes</th>
+                        <th>Sentiment</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -207,6 +256,7 @@
                         <td>{{ comment['Comment_Text'] }}</td>
                         <td>{{ comment['Time'] }}</td>
                         <td>{{ comment['Likes'] }}</td>
+                        <td class="sentiment-{{ comment['sentiment'] }}">{{ comment['sentiment'] }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -223,22 +273,25 @@
             var ctx = document.getElementById('commentChart').getContext('2d');
             var chartElement = document.getElementById('commentChart');
             var positiveCount = parseInt(chartElement.dataset.positiveCount);
-            var purchaseCount = parseInt(chartElement.dataset.purchaseCount);
+            var neutralCount = parseInt(chartElement.dataset.neutralCount);
+            var negativeCount = parseInt(chartElement.dataset.negativeCount);
 
             var chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Positive Comments', 'Purchase Interest'],
+                    labels: ['Positive', 'Neutral', 'Negative'],
                     datasets: [{
                         label: 'Number of Comments',
-                        data: [positiveCount, purchaseCount],
+                        data: [positiveCount, neutralCount, negativeCount],
                         backgroundColor: [
-                            'rgba(0, 242, 234, 0.6)',
-                            'rgba(255, 0, 80, 0.6)'
+                            'rgba(76, 175, 80, 0.6)',
+                            'rgba(255, 167, 38, 0.6)',
+                            'rgba(244, 67, 54, 0.6)'
                         ],
                         borderColor: [
-                            'rgba(0, 242, 234, 1)',
-                            'rgba(255, 0, 80, 1)'
+                            'rgba(76, 175, 80, 1)',
+                            'rgba(255, 167, 38, 1)',
+                            'rgba(244, 67, 54, 1)'
                         ],
                         borderWidth: 1
                     }]
@@ -256,7 +309,7 @@
                         },
                         title: {
                             display: true,
-                            text: 'Comment Analysis'
+                            text: 'Comment Sentiment Analysis'
                         }
                     }
                 }
