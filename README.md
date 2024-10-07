@@ -28,6 +28,16 @@ This project provides a Chrome extension and backend server for scraping and ana
      
 ## Installation
 
-### Prerequistes
+### Prerequisites
+- Python 3.7+
+- Chrome Browser
+
+### Backend Setup
+1. Clone the repository
+   git clone https://github.com/your-username/tiktok-scraper.git
+   cd tiktok-scraper
+
+2. install the required
+
 
 
