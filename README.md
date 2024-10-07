@@ -28,6 +28,6 @@ This project provides a Chrome extension and backend server for scraping and ana
      
 ## Installation
 
-# Installation
+### Prerequistes
 
 
