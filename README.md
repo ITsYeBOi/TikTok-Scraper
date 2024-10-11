@@ -11,6 +11,10 @@ This project provides a Chrome extension and backend server for scraping and ana
 -  Download post metadata and comment data
 -  Chrome extension for easy access to scraping functionality
 
+## Demonstration
+
+https://github.com/user-attachments/assets/55affc11-f089-45c1-ba46-8ab09d552a08
+
 ## Project Structure
 
 1. Chrome Extension
